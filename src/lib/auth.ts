@@ -1,7 +1,7 @@
 // src/lib/auth.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify, SignJWT } from 'jose';
-import { getUserRepository, getRoleRepository } from './db';
+import { getUserRepository, getRoleRepository, getDbConnection } from './db';
 import { User } from './db/entities/User';
 import {
   cacheUserSession,
@@ -94,7 +94,7 @@ export async function verifyAuth(req: NextRequest) {
     }
 
     // If not in cache, get from database
-    const userRepo = getUserRepository();
+    const userRepo = await getUserRepository();
     const user = await userRepo.findOne({
       where: { id: payload.id as string },
       relations: ['roles', 'roles.permissions'],
@@ -139,8 +139,8 @@ export function hasPermission(user: any, requiredPermission: string): boolean {
 
 // Register new user
 export async function registerUser(email: string, password: string, name: string): Promise<User> {
-  const userRepo = getUserRepository();
-  const roleRepo = getRoleRepository();
+  const userRepo = await getUserRepository();
+  const roleRepo = await getRoleRepository();
 
   // Check if user already exists
   const existingUser = await userRepo.findOne({ where: { email } });
@@ -174,7 +174,8 @@ export async function loginUser(
   email: string,
   password: string,
 ): Promise<{ user: User; token: string }> {
-  const userRepo = getUserRepository();
+  debugger;
+  const userRepo = await getUserRepository();
 
   // Find user with password (need to explicitly select password)
   const user = await userRepo

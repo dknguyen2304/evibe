@@ -1,4 +1,3 @@
-// src/lib/db/entities/Rating.ts
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -25,7 +24,7 @@ export class Rating {
   @JoinColumn({ name: 'user_id' })
   user: User;
 
-  @ManyToOne(() => Movie, (movie) => movie.ratings)
+  @ManyToOne(() => Movie)
   @JoinColumn({ name: 'movie_id' })
   movie: Movie;
 

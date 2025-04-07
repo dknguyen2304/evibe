@@ -1,4 +1,3 @@
-// src/lib/db/entities/Comment.ts
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -23,7 +22,7 @@ export class Comment {
   @JoinColumn({ name: 'user_id' })
   user: User;
 
-  @ManyToOne(() => Movie, (movie) => movie.comments)
+  @ManyToOne(() => Movie)
   @JoinColumn({ name: 'movie_id' })
   movie: Movie;
 

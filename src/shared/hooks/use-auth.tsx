@@ -48,6 +48,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     const loadUser = async () => {
       try {
+        debugger;
         // Check if we have a token
         const token = localStorage.getItem('token');
         if (!token) {

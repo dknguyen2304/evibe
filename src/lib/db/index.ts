@@ -14,6 +14,12 @@ import { Rating } from './entities/Rating';
 import { Favorite } from './entities/Favorite';
 import { Episode } from './entities/Episode';
 import { View } from './entities/View';
+import { Collection } from './entities/Collection';
+import { Director } from './entities/Director';
+import { Genre } from './entities/Genre';
+import { Review } from './entities/Review';
+import { SlugConfig } from './entities/SlugConfig';
+import { ValidateMovie } from './entities/ValidateMovie';
 
 const databaseSetups: DataSourceOptions = {
   type: 'postgres',
@@ -25,18 +31,24 @@ const databaseSetups: DataSourceOptions = {
   synchronize: process.env.NODE_ENV !== 'production', // Auto-create database schema in development
   logging: process.env.NODE_ENV !== 'production',
   entities: [
-    User,
-    Role,
-    Permission,
-    Movie,
-    Category,
     Actor,
-    Country,
-    Theme,
+    Category,
+    Collection,
     Comment,
-    Rating,
-    Favorite,
+    Country,
+    Director,
     Episode,
+    Favorite,
+    Genre,
+    Movie,
+    Permission,
+    Rating,
+    Review,
+    Role,
+    SlugConfig,
+    Theme,
+    User,
+    ValidateMovie,
     View,
   ],
   migrations: [],
@@ -64,16 +76,17 @@ export async function getDbConnection() {
 }
 
 // Repository getters
-export const getUserRepository = () => AppDataSource.getRepository(User);
-export const getRoleRepository = () => AppDataSource.getRepository(Role);
-export const getPermissionRepository = () => AppDataSource.getRepository(Permission);
-export const getMovieRepository = () => AppDataSource.getRepository(Movie);
-export const getCategoryRepository = () => AppDataSource.getRepository(Category);
-export const getActorRepository = () => AppDataSource.getRepository(Actor);
-export const getCountryRepository = () => AppDataSource.getRepository(Country);
-export const getThemeRepository = () => AppDataSource.getRepository(Theme);
-export const getCommentRepository = () => AppDataSource.getRepository(Comment);
-export const getRatingRepository = () => AppDataSource.getRepository(Rating);
-export const getFavoriteRepository = () => AppDataSource.getRepository(Favorite);
-export const getEpisodeRepository = () => AppDataSource.getRepository(Episode);
-export const getViewRepository = () => AppDataSource.getRepository(View);
+export const getUserRepository = async () => (await getDbConnection()).getRepository(User);
+export const getRoleRepository = async () => (await getDbConnection()).getRepository(Role);
+export const getPermissionRepository = async () =>
+  (await getDbConnection()).getRepository(Permission);
+export const getMovieRepository = async () => (await getDbConnection()).getRepository(Movie);
+export const getCategoryRepository = async () => (await getDbConnection()).getRepository(Category);
+export const getActorRepository = async () => (await getDbConnection()).getRepository(Actor);
+export const getCountryRepository = async () => (await getDbConnection()).getRepository(Country);
+export const getThemeRepository = async () => (await getDbConnection()).getRepository(Theme);
+export const getCommentRepository = async () => (await getDbConnection()).getRepository(Comment);
+export const getRatingRepository = async () => (await getDbConnection()).getRepository(Rating);
+export const getFavoriteRepository = async () => (await getDbConnection()).getRepository(Favorite);
+export const getEpisodeRepository = async () => (await getDbConnection()).getRepository(Episode);
+export const getViewRepository = async () => (await getDbConnection()).getRepository(View);

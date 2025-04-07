@@ -1,4 +1,3 @@
-// src/lib/db/entities/Movie.ts
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -8,14 +7,12 @@ import {
   ManyToMany,
   JoinTable,
   ManyToOne,
-  OneToMany,
 } from 'typeorm';
 import { Category } from './Category';
 import { Actor } from './Actor';
-import { Comment } from './Comment';
-import { Rating } from './Rating';
 import { Country } from './Country';
 import { Theme } from './Theme';
+import { Director } from './Director';
 
 @Entity({ name: 'movies' })
 export class Movie {
@@ -56,7 +53,7 @@ export class Movie {
   isFeatured: boolean;
 
   @Column({ default: 'movie' })
-  type: string; // 'movie' or 'series'
+  type: string;
 
   @Column({ nullable: true })
   totalEpisodes: number;
@@ -65,37 +62,22 @@ export class Movie {
   viewCount: number;
 
   @ManyToMany(() => Category)
-  @JoinTable({
-    name: 'movie_categories',
-    joinColumn: { name: 'movie_id', referencedColumnName: 'id' },
-    inverseJoinColumn: { name: 'category_id', referencedColumnName: 'id' },
-  })
+  @JoinTable({ name: 'movie_categories' })
   categories: Category[];
 
   @ManyToMany(() => Actor)
-  @JoinTable({
-    name: 'movie_actors',
-    joinColumn: { name: 'movie_id', referencedColumnName: 'id' },
-    inverseJoinColumn: { name: 'actor_id', referencedColumnName: 'id' },
-  })
+  @JoinTable({ name: 'movie_actors' })
   actors: Actor[];
 
   @ManyToOne(() => Country, { nullable: true })
   country: Country;
 
   @ManyToMany(() => Theme)
-  @JoinTable({
-    name: 'movie_themes',
-    joinColumn: { name: 'movie_id', referencedColumnName: 'id' },
-    inverseJoinColumn: { name: 'theme_id', referencedColumnName: 'id' },
-  })
+  @JoinTable({ name: 'movie_themes' })
   themes: Theme[];
 
-  @OneToMany(() => Comment, (comment) => comment.movie)
-  comments: Comment[];
-
-  @OneToMany(() => Rating, (rating) => rating.movie)
-  ratings: Rating[];
+  @ManyToOne(() => Director, { nullable: true })
+  director: Director;
 
   @CreateDateColumn()
   createdAt: Date;

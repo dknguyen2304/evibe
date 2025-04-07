@@ -1,11 +1,10 @@
-// src/lib/db/entities/View.ts
 import {
   Entity,
   PrimaryGeneratedColumn,
   CreateDateColumn,
+  Column,
   ManyToOne,
   JoinColumn,
-  Column,
 } from 'typeorm';
 import { User } from './User';
 import { Movie } from './Movie';

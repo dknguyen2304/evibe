@@ -10,7 +10,6 @@ import { hashPassword } from '../auth';
 
 async function setupDatabase() {
   try {
-    debugger;
     // Initialize database connection
     await getDbConnection();
 

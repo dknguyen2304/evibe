@@ -22,6 +22,7 @@ export default function AdminDashboard() {
   const [isLoadingStats, setIsLoadingStats] = useState(true);
 
   useEffect(() => {
+    debugger;
     // Check if user is admin
     if (!isLoading && (!user || !user.roles.includes('admin'))) {
       router.push('/');

@@ -1,4 +1,3 @@
-// src/lib/db/entities/Favorite.ts
 import {
   Entity,
   PrimaryGeneratedColumn,

@@ -21,7 +21,7 @@ export class User {
   @Column()
   name: string;
 
-  @Column({ select: false }) // Don't select password by default for security
+  @Column({ select: false })
   passwordHash: string;
 
   @ManyToMany(() => Role)

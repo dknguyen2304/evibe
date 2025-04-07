@@ -17,6 +17,7 @@ const protectedPaths = [
 const adminPaths = ['/admin', '/api/admin'];
 
 export async function middleware(req: NextRequest) {
+  debugger;
   const { pathname } = req.nextUrl;
 
   // Check if path requires authentication

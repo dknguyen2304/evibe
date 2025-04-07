@@ -1,12 +1,4 @@
-import { Entity } from 'typeorm';
-
-import { Column, PrimaryGeneratedColumn } from 'typeorm';
-
-import { ManyToOne } from 'typeorm';
-
-import { ManyToMany } from 'typeorm';
-
-import { JoinTable } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, ManyToMany, JoinTable } from 'typeorm';
 import { Movie } from './Movie';
 import { User } from './User';
 
@@ -18,7 +10,7 @@ export class Collection {
   @Column()
   name: string;
 
-  @ManyToOne(() => User, (user) => user.collections)
+  @ManyToOne(() => User)
   user: User;
 
   @ManyToMany(() => Movie)

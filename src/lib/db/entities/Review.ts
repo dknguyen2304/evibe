@@ -1,4 +1,4 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne } from 'typeorm';
 import { User } from './User';
 import { Movie } from './Movie';
 
@@ -16,7 +16,7 @@ export class Review {
   @Column()
   createdAt: Date;
 
-  @ManyToOne(() => User, (user) => user.reviews)
+  @ManyToOne(() => User)
   user: User;
 
   @ManyToOne(() => Movie)

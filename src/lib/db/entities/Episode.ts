@@ -1,4 +1,3 @@
-// src/lib/db/entities/Episode.ts
 import {
   Entity,
   PrimaryGeneratedColumn,
