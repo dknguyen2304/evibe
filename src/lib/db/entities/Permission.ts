@@ -14,11 +14,11 @@ export class Permission {
   @Column({ unique: true })
   name: string;
 
-  @Column()
-  resource: string;
+  @Column({ nullable: true })
+  resource?: string;
 
-  @Column()
-  action: string;
+  @Column({ nullable: true })
+  action?: string;
 
   @Column({ nullable: true })
   description: string;

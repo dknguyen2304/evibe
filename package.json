@@ -10,7 +10,8 @@
     "prepare": "husky",
     "format": "prettier --write .",
     "analyze": "cross-env ANALYZE=true next build",
-    "postbuild": "next-sitemap"
+    "postbuild": "next-sitemap",
+    "db:setup": "ts-node -P tsconfig-node.json src/lib/db/setup.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -52,6 +53,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "recharts": "^2.15.2",
+    "reflect-metadata": "^0.2.2",
     "slugify": "^1.6.6",
     "sonner": "^2.0.3",
     "tailwind-merge": "^3.1.0",

@@ -3,15 +3,14 @@ import { AppDataSource, getDbConnection } from './index';
 import { User } from './entities/User';
 import { Role } from './entities/Role';
 import { Permission } from './entities/Permission';
-import { Movie } from './entities/Movie';
 import { Category } from './entities/Category';
-import { Actor } from './entities/Actor';
 import { Country } from './entities/Country';
 import { Theme } from './entities/Theme';
 import { hashPassword } from '../auth';
 
 async function setupDatabase() {
   try {
+    debugger;
     // Initialize database connection
     await getDbConnection();
 

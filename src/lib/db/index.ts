@@ -1,6 +1,6 @@
 // src/lib/db/index.ts
 import 'reflect-metadata';
-import { DataSource } from 'typeorm';
+import { DataSource, DataSourceOptions } from 'typeorm';
 import { User } from './entities/User';
 import { Role } from './entities/Role';
 import { Permission } from './entities/Permission';
@@ -15,10 +15,13 @@ import { Favorite } from './entities/Favorite';
 import { Episode } from './entities/Episode';
 import { View } from './entities/View';
 
-// Initialize data source
-export const AppDataSource = new DataSource({
+const databaseSetups: DataSourceOptions = {
   type: 'postgres',
-  url: process.env.DATABASE_URL,
+  host: process.env.DATABASE_HOST || 'localhost',
+  port: parseInt(process.env.DATABASE_PORT || '5432'),
+  username: process.env.DATABASE_USERNAME || 'postgres',
+  password: process.env.DATABASE_PASSWORD || 'postgres',
+  database: process.env.DATABASE_NAME || 'rophim',
   synchronize: process.env.NODE_ENV !== 'production', // Auto-create database schema in development
   logging: process.env.NODE_ENV !== 'production',
   entities: [
@@ -38,7 +41,10 @@ export const AppDataSource = new DataSource({
   ],
   migrations: [],
   subscribers: [],
-});
+};
+
+// Initialize data source
+export const AppDataSource = new DataSource(databaseSetups);
 
 // Database connection singleton
 let initialized = false;
