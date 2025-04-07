@@ -1,10 +1,10 @@
 'use client';
 
 import ProtectedRoute from '@/components/auth/protected-route';
-import { SiteHeader } from '@/components/Layout/site-header';
-import { SectionCards } from '@/components/Layout/section-cards';
-import { ChartAreaInteractive } from '@/components/Layout/chart-area-interactive';
-import { DataTable } from '@/components/Layout/data-table';
+import { SiteHeader } from '@/components/layout/site-header';
+import { SectionCards } from '@/components/layout/section-cards';
+import { ChartAreaInteractive } from '@/components/layout/chart-area-interactive';
+import { DataTable } from '@/components/layout/data-table';
 import data from './data.json';
 
 export default function DashboardPage() {

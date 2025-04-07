@@ -1,4 +1,4 @@
-// src/lib/db/entities/Actor.ts
+// src/lib/db/entities/Theme.ts
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -7,8 +7,8 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-@Entity({ name: 'actors' })
-export class Actor {
+@Entity({ name: 'themes' })
+export class Theme {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -19,10 +19,7 @@ export class Actor {
   slug: string;
 
   @Column({ nullable: true })
-  photoUrl: string;
-
-  @Column({ type: 'text', nullable: true })
-  bio: string;
+  description: string;
 
   @CreateDateColumn()
   createdAt: Date;

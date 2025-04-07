@@ -1,108 +1,208 @@
+// src/lib/auth.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { verify } from 'jsonwebtoken';
+import { jwtVerify, SignJWT } from 'jose';
+import { getUserRepository, getRoleRepository } from './db';
+import { User } from './db/entities/User';
+import {
+  cacheUserSession,
+  getCachedUserSession,
+  invalidateUserSession,
+} from './redis/sessionCache';
+import * as bcrypt from 'bcryptjs';
 
-// Custom error messages for better debugging and user experience
-const ERROR_MESSAGES = {
-  NO_TOKEN: 'Authentication token is missing',
-  INVALID_FORMAT: 'Invalid authentication format',
-  EXPIRED: 'Authentication token has expired',
-  INVALID: 'Invalid authentication token',
-  SERVER_ERROR: 'Authentication error occurred',
+// Secret key for JWT
+const getJwtSecret = () => {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('JWT_SECRET environment variable is not set');
+  }
+  return new TextEncoder().encode(secret);
 };
 
-// JWT Secret (move to env variable in production)
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key';
+// JWT expiration time
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 
-// Define a type for the decoded JWT user data
-interface JWTUser {
-  id: string;
-  email: string;
-  name: string;
-  [key: string]: unknown; // For any additional fields
+// Hash password
+export async function hashPassword(password: string): Promise<string> {
+  const salt = await bcrypt.genSalt(10);
+  return bcrypt.hash(password, salt);
 }
 
-// Authentication middleware for Next.js API routes
-export async function authenticateRequest(request: NextRequest) {
+// Verify password
+export async function verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
+  return bcrypt.compare(password, hashedPassword);
+}
+
+// Generate JWT token
+export async function generateToken(user: User): Promise<string> {
+  const payload = {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    roles: user.roles.map((role) => role.name),
+  };
+
+  // Cache user session data
+  await cacheUserSession(user.id, payload);
+
+  return new SignJWT(payload)
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime(JWT_EXPIRES_IN)
+    .sign(await getJwtSecret());
+}
+
+// Verify JWT token
+export async function verifyToken(token: string) {
   try {
-    // Get authorization header
-    const authHeader = request.headers.get('Authorization');
-
-    // Check if token exists and has correct format
-    if (!authHeader) {
-      return {
-        isAuthenticated: false,
-        error: ERROR_MESSAGES.NO_TOKEN,
-        status: 401,
-      };
-    }
-
-    if (!authHeader.startsWith('Bearer ')) {
-      return {
-        isAuthenticated: false,
-        error: ERROR_MESSAGES.INVALID_FORMAT,
-        status: 401,
-      };
-    }
-
-    // Extract the token
-    const token = authHeader.split(' ')[1];
-
-    // Verify JWT token
-    try {
-      const decoded = await new Promise((resolve, reject) => {
-        verify(token, JWT_SECRET, (err, decoded) => {
-          if (err) {
-            if (err.name === 'TokenExpiredError') {
-              reject(new Error(ERROR_MESSAGES.EXPIRED));
-            } else {
-              reject(new Error(ERROR_MESSAGES.INVALID));
-            }
-          }
-          resolve(decoded);
-        });
-      });
-
-      return {
-        isAuthenticated: true,
-        user: decoded,
-        error: null,
-        status: 200,
-      };
-    } catch (error) {
-      // Handle different JWT verification errors
-      const message = error instanceof Error ? error.message : ERROR_MESSAGES.INVALID;
-      return {
-        isAuthenticated: false,
-        error: message,
-        status: 401,
-      };
-    }
-  } catch (error) {
-    console.error('Auth middleware error:', error);
+    const { payload } = await jwtVerify(token, await getJwtSecret());
     return {
-      isAuthenticated: false,
-      error: ERROR_MESSAGES.SERVER_ERROR,
-      status: 500,
+      isValid: true,
+      payload,
+    };
+  } catch (error) {
+    return {
+      isValid: false,
+      error,
     };
   }
 }
 
-// Helper function to respond with unauthorized error
-export function respondWithUnauthorized(error: string) {
-  return NextResponse.json({ error }, { status: 401 });
-}
-
-// Wrap an API handler with authentication
-export function withAuth(
-  handler: (req: NextRequest, user: JWTUser) => Promise<NextResponse> | NextResponse,
-) {
-  return async (req: NextRequest) => {
-    const auth = await authenticateRequest(req);
-
-    if (!auth.isAuthenticated) {
-      return respondWithUnauthorized(auth.error || ERROR_MESSAGES.INVALID);
+// Authentication middleware
+export async function verifyAuth(req: NextRequest) {
+  try {
+    // Get token from Authorization header
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return { isAuthenticated: false, error: 'No token provided' };
     }
 
-    return handler(req, auth.user as JWTUser);
-  };
+    const token = authHeader.split(' ')[1];
+    const { isValid, payload, error } = await verifyToken(token);
+
+    if (!isValid || !payload) {
+      return { isAuthenticated: false, error };
+    }
+
+    // Try to get user data from cache first
+    const cachedUser = await getCachedUserSession(payload.id as string);
+    if (cachedUser) {
+      return {
+        isAuthenticated: true,
+        user: cachedUser,
+      };
+    }
+
+    // If not in cache, get from database
+    const userRepo = getUserRepository();
+    const user = await userRepo.findOne({
+      where: { id: payload.id as string },
+      relations: ['roles', 'roles.permissions'],
+    });
+
+    if (!user) {
+      return { isAuthenticated: false, error: 'User not found' };
+    }
+
+    const userData = {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      roles: user.roles.map((role) => role.name),
+      permissions: user.roles.flatMap((role) =>
+        role.permissions.map((permission) => permission.name),
+      ),
+    };
+
+    // Cache user session data
+    await cacheUserSession(user.id, userData);
+
+    return {
+      isAuthenticated: true,
+      user: userData,
+    };
+  } catch (error) {
+    console.error('Auth error:', error);
+    return { isAuthenticated: false, error };
+  }
+}
+
+// Check if user has required role
+export function hasRole(user: any, requiredRole: string): boolean {
+  return user.roles.includes(requiredRole);
+}
+
+// Check if user has required permission
+export function hasPermission(user: any, requiredPermission: string): boolean {
+  return user.permissions.includes(requiredPermission);
+}
+
+// Register new user
+export async function registerUser(email: string, password: string, name: string): Promise<User> {
+  const userRepo = getUserRepository();
+  const roleRepo = getRoleRepository();
+
+  // Check if user already exists
+  const existingUser = await userRepo.findOne({ where: { email } });
+  if (existingUser) {
+    throw new Error('User already exists');
+  }
+
+  // Get default user role
+  const userRole = await roleRepo.findOne({
+    where: { name: 'user' },
+    relations: ['permissions'],
+  });
+
+  if (!userRole) {
+    throw new Error('Default user role not found');
+  }
+
+  // Create new user
+  const user = new User();
+  user.email = email;
+  user.name = name;
+  user.passwordHash = await hashPassword(password);
+  user.roles = [userRole];
+
+  await userRepo.save(user);
+  return user;
+}
+
+// Login user
+export async function loginUser(
+  email: string,
+  password: string,
+): Promise<{ user: User; token: string }> {
+  const userRepo = getUserRepository();
+
+  // Find user with password (need to explicitly select password)
+  const user = await userRepo
+    .createQueryBuilder('user')
+    .addSelect('user.passwordHash')
+    .leftJoinAndSelect('user.roles', 'roles')
+    .leftJoinAndSelect('roles.permissions', 'permissions')
+    .where('user.email = :email', { email })
+    .getOne();
+
+  if (!user) {
+    throw new Error('Invalid credentials');
+  }
+
+  // Verify password
+  const isPasswordValid = await verifyPassword(password, user.passwordHash);
+  if (!isPasswordValid) {
+    throw new Error('Invalid credentials');
+  }
+
+  // Generate token
+  const token = await generateToken(user);
+
+  return { user, token };
+}
+
+// Logout user
+export async function logoutUser(userId: string): Promise<void> {
+  // Invalidate user session in cache
+  await invalidateUserSession(userId);
 }

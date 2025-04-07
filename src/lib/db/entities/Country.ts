@@ -1,4 +1,4 @@
-// src/lib/db/entities/Actor.ts
+// src/lib/db/entities/Country.ts
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -7,8 +7,8 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-@Entity({ name: 'actors' })
-export class Actor {
+@Entity({ name: 'countries' })
+export class Country {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -17,12 +17,6 @@ export class Actor {
 
   @Column({ unique: true })
   slug: string;
-
-  @Column({ nullable: true })
-  photoUrl: string;
-
-  @Column({ type: 'text', nullable: true })
-  bio: string;
 
   @CreateDateColumn()
   createdAt: Date;

@@ -1,93 +1,63 @@
+// src/app/api/users/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuth } from '@/lib/auth';
-import { userCreateSchema } from '@/features/users/schemas/userSchema';
-import { getAllUsers, createUser, deleteUser } from '@/features/users/services/userService';
-import { GetDataSource } from '@/lib/db';
+import { getUserRepository } from '@/lib/db';
+import { verifyAuth, hasRole } from '@/lib/auth';
+import { cacheApiResponse, invalidateCache } from '@/lib/redis/apiCache';
 
-// GET /api/users - Get all users (public)
-export async function GET() {
-  try {
-    const connection = await GetDataSource();
+export async function GET(req: NextRequest) {
+  // Verify authentication
+  const authResult = await verifyAuth(req);
+  if (!authResult.isAuthenticated) {
+    return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+  }
 
-    const result = await getAllUsers();
+  // Check if user has admin role
+  if (!hasRole(authResult.user, 'admin')) {
+    return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
+  }
 
-    if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: 500 });
+  return cacheApiResponse(req, async () => {
+    const { searchParams } = new URL(req.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '20');
+    const search = searchParams.get('search');
+
+    const skip = (page - 1) * limit;
+
+    const userRepo = getUserRepository();
+    let query = userRepo.createQueryBuilder('user').leftJoinAndSelect('user.roles', 'roles');
+
+    // Apply search filter
+    if (search) {
+      query = query.where('user.name ILIKE :search OR user.email ILIKE :search', {
+        search: `%${search}%`,
+      });
     }
 
-    return NextResponse.json(result.data);
-  } catch (error) {
-    console.error('Error fetching users:', error);
-    return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });
-  }
+    // Get total count for pagination
+    const total = await query.getCount();
+
+    // Get paginated results
+    const users = await query.orderBy('user.createdAt', 'DESC').skip(skip).take(limit).getMany();
+
+    // Map users to remove sensitive data
+    const mappedUsers = users.map((user) => ({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      roles: user.roles.map((role) => role.name),
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    }));
+
+    return NextResponse.json({
+      data: mappedUsers,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
+  });
 }
-
-// POST /api/users - Create a new user
-export async function POST(request: NextRequest) {
-  try {
-    const connection = await GetDataSource();
-
-    // Validate request body
-    const body = await request.json();
-    const result = userCreateSchema.safeParse(body);
-
-    if (!result.success) {
-      return NextResponse.json(
-        { error: 'Invalid request data', details: result.error.errors },
-        { status: 400 },
-      );
-    }
-
-    const userData = result.data;
-
-    if (!userData.password) {
-      return NextResponse.json({ error: 'Password is required' }, { status: 400 });
-    }
-
-    // Create user using service
-    const createResult = await createUser(userData);
-
-    if (!createResult.success) {
-      return NextResponse.json({ error: createResult.error }, { status: 409 });
-    }
-
-    return NextResponse.json(createResult.data, { status: 201 });
-  } catch (error) {
-    console.error('Error creating user:', error);
-    return NextResponse.json({ error: 'Failed to create user' }, { status: 500 });
-  }
-}
-
-// Example of a protected endpoint
-export const DELETE = withAuth(async (request: NextRequest, user) => {
-  try {
-    const connection = await GetDataSource();
-
-    const url = new URL(request.url);
-    const id = url.searchParams.get('id');
-
-    if (!id) {
-      return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
-    }
-
-    // Admin check (example)
-    if (user.role !== 'admin') {
-      return NextResponse.json({ error: 'Only administrators can delete users' }, { status: 403 });
-    }
-
-    // Delete user using service
-    const deleteResult = await deleteUser(id);
-
-    if (!deleteResult.success) {
-      if (deleteResult.error === 'User not found') {
-        return NextResponse.json({ error: 'User not found' }, { status: 404 });
-      }
-      return NextResponse.json({ error: deleteResult.error }, { status: 500 });
-    }
-
-    return NextResponse.json({ message: 'User deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting user:', error);
-    return NextResponse.json({ error: 'Failed to delete user' }, { status: 500 });
-  }
-});

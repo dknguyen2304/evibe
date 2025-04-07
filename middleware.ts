@@ -1,102 +1,79 @@
+// src/middleware.ts
 import { NextRequest, NextResponse } from 'next/server';
-import acceptLanguage from 'accept-language';
-import { match as matchLocale } from '@formatjs/intl-localematcher';
-
-// Supported locales
-export const locales = ['en', 'fr', 'es', 'de'];
-export const defaultLocale = 'en';
-
-// Configure accept-language
-acceptLanguage.languages(locales);
+import { verifyToken } from '@/lib/auth';
 
 // Paths that require authentication
-const PROTECTED_PATHS = ['/dashboard', '/profile', '/settings', '/admin'];
-
-// Paths that are accessible only to non-authenticated users
-const AUTH_PATHS = [
-  '/auth/sign-in',
-  '/auth/sign-up',
-  '/auth/forgot-password',
-  '/auth/reset-password',
+const protectedPaths = [
+  '/api/favorites',
+  '/api/comments',
+  '/api/ratings',
+  '/api/auth/me',
+  '/api/auth/logout',
+  '/api/users',
+  '/admin',
 ];
 
-// Get the preferred locale from request
-function getLocale(request: NextRequest): string {
-  // Negotiator expects plain object so we need to transform headers
-  const negotiatorHeaders: Record<string, string> = {};
-  request.headers.forEach((value, key) => (negotiatorHeaders[key] = value));
+// Paths that require admin role
+const adminPaths = ['/admin', '/api/admin'];
 
-  // Use negotiator and intl-localematcher to get the best locale
-  let languages = acceptLanguage.get(negotiatorHeaders['accept-language']);
-  if (!languages) languages = defaultLocale;
+export async function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
 
-  // Convert string to array if necessary
-  const languagesArray = Array.isArray(languages) ? languages : [languages];
+  // Check if path requires authentication
+  const isProtectedPath = protectedPaths.some((path) => pathname.startsWith(path));
 
-  return matchLocale(languagesArray, locales, defaultLocale);
-}
+  // Check if path requires admin role
+  const isAdminPath = adminPaths.some((path) => pathname.startsWith(path));
 
-// Combined middleware for both internationalization and authentication
-export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-  const response = NextResponse.next();
+  if (isProtectedPath || isAdminPath) {
+    // Get token from Authorization header
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      // For API routes, return 401 Unauthorized
+      if (pathname.startsWith('/api/')) {
+        return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+      }
 
-  // PART 1: Internationalization handling
-  // Get locale either from cookie or from accept-language header
-  const locale = request.cookies.get('NEXT_LOCALE')?.value || getLocale(request);
+      // For non-API routes, redirect to login page
+      const url = new URL('/login', req.url);
+      url.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(url);
+    }
 
-  // Set or update the locale cookie if it doesn't exist or is different
-  if (!request.cookies.has('NEXT_LOCALE') || request.cookies.get('NEXT_LOCALE')?.value !== locale) {
-    response.cookies.set('NEXT_LOCALE', locale, {
-      path: '/',
-      maxAge: 60 * 60 * 24 * 30, // 30 days
-    });
-  }
+    const token = authHeader.split(' ')[1];
+    const { isValid, payload } = await verifyToken(token);
 
-  // PART 2: Authentication handling
-  // Get the auth token from cookies
-  const token = request.cookies.get('auth-storage')?.value;
-  let isAuthenticated = false;
+    if (!isValid || !payload) {
+      // For API routes, return 401 Unauthorized
+      if (pathname.startsWith('/api/')) {
+        return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+      }
 
-  // Parse the cookie content if it exists
-  if (token) {
-    try {
-      const authStorage = JSON.parse(decodeURIComponent(token));
-      isAuthenticated = authStorage.state?.isAuthenticated === true && !!authStorage.state?.token;
-    } catch (error) {
-      console.error('Error parsing auth cookie:', error);
+      // For non-API routes, redirect to login page
+      const url = new URL('/login', req.url);
+      url.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(url);
+    }
+
+    // Check admin role for admin paths
+    if (isAdminPath) {
+      const roles = payload.roles as string[];
+      if (!roles.includes('admin')) {
+        // For API routes, return 403 Forbidden
+        if (pathname.startsWith('/api/')) {
+          return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
+        }
+
+        // For non-API routes, redirect to home page
+        return NextResponse.redirect(new URL('/', req.url));
+      }
     }
   }
 
-  // Check if the user is trying to access a protected route without authentication
-  const isProtectedRoute = PROTECTED_PATHS.some((path) => pathname.startsWith(path));
-  if (isProtectedRoute && !isAuthenticated) {
-    const redirectUrl = new URL('/auth/sign-in', request.url);
-    redirectUrl.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(redirectUrl);
-  }
-
-  // Redirect authenticated users away from auth pages
-  const isAuthRoute = AUTH_PATHS.some((path) => pathname === path);
-  if (isAuthRoute && isAuthenticated) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
-  }
-
-  return response;
+  return NextResponse.next();
 }
 
-// Combined matcher for both internationalization and authentication
-export const matcher = [
-  // i18n: Match all paths except static files and API routes
-  '/((?!_next|api|favicon.ico|assets|.*\\.).*))',
-  // Auth: Match protected paths
-  '/dashboard/:path*',
-  '/profile/:path*',
-  '/settings/:path*',
-  '/admin/:path*',
-  // Auth: Match auth routes
-  '/auth/sign-in',
-  '/auth/sign-up',
-  '/auth/forgot-password',
-  '/auth/reset-password',
-];
+// Configure the middleware to run only for specific paths
+export const config = {
+  matcher: ['/api/:path*', '/admin/:path*', '/profile/:path*'],
+};

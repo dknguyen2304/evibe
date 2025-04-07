@@ -1,4 +1,4 @@
-import { AppSidebar } from '@/components/Layout/app-sidebar';
+import { AppSidebar } from '@/components/layout/app-sidebar';
 import { cn } from '@/lib/utils';
 import { SidebarProvider } from '@/shared/ui/sidebar';
 
