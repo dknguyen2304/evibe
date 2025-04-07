@@ -145,7 +145,7 @@ Follow the Conventional Commit Messages specification for all commits:
 ### Scope
 - Optional, describes section of codebase: `feat(voice):`, `fix(auth):`, etc.
 - Common scopes: `voice`, `auth`, `ui`, `api`, `learn`, `interview`
-- Lines must not be longer than 100 characters
+- Lines must not be longer than 200 characters
 
 ### Breaking Changes
 - Add `!` before colon: `feat(api)!: change authentication flow`
