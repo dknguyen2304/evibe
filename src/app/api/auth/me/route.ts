@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Get user details
-    const userRepo = getUserRepository();
+    const userRepo = await getUserRepository();
     const user = await userRepo.findOne({
       where: { id: authResult.user.id },
       relations: ['roles', 'roles.permissions'],

@@ -1,17 +1,14 @@
-import { GetDataSource } from '@/lib/db';
 import { User } from '@/lib/db/entities/User';
 import { UserCreate } from '@/features/users/schemas/userSchema';
-
-// User repository
-const dataSource = await GetDataSource();
-const userRepository = dataSource.getRepository(User);
+import { getUserRepository } from '@/lib/db';
 
 /**
  * Get all users
  */
 export async function getAllUsers() {
   try {
-    const users = await userRepository.find();
+    const userRepo = await getUserRepository();
+    const users = userRepo.find();
     return { success: true, data: users };
   } catch (error) {
     console.error('Error fetching users:', error);
@@ -24,7 +21,8 @@ export async function getAllUsers() {
  */
 export async function getUserById(id: string) {
   try {
-    const user = await userRepository.findOne({
+    const userRepo = await getUserRepository();
+    const user = await userRepo.findOne({
       where: { id },
     });
 
@@ -44,8 +42,9 @@ export async function getUserById(id: string) {
  */
 export async function createUser(userData: UserCreate) {
   try {
+    const userRepo = await getUserRepository();
     // Check if user already exists
-    const existingUser = await userRepository.findOne({
+    const existingUser = await userRepo.findOne({
       where: { email: userData.email },
     });
 
@@ -54,10 +53,10 @@ export async function createUser(userData: UserCreate) {
     }
 
     // Create new user
-    const newUser = userRepository.create(userData);
+    const newUser = userRepo.create(userData);
 
     // Save to database
-    await userRepository.save(newUser);
+    await userRepo.save(newUser);
 
     return { success: true, data: newUser };
   } catch (error) {
@@ -71,8 +70,9 @@ export async function createUser(userData: UserCreate) {
  */
 export async function updateUser(id: string, userData: Partial<UserCreate>) {
   try {
+    const userRepo = await getUserRepository();
     // Check if user exists
-    const user = await userRepository.findOne({
+    const user = await userRepo.findOne({
       where: { id },
     });
 
@@ -82,7 +82,7 @@ export async function updateUser(id: string, userData: Partial<UserCreate>) {
 
     // Check email uniqueness if trying to update email
     if (userData.email && userData.email !== user.email) {
-      const existingUser = await userRepository.findOne({
+      const existingUser = await userRepo.findOne({
         where: { email: userData.email },
       });
 
@@ -92,7 +92,7 @@ export async function updateUser(id: string, userData: Partial<UserCreate>) {
     }
 
     // Update user
-    const updatedUser = await userRepository.save({
+    const updatedUser = await userRepo.save({
       ...user,
       ...userData,
     });
@@ -109,8 +109,9 @@ export async function updateUser(id: string, userData: Partial<UserCreate>) {
  */
 export async function deleteUser(id: string) {
   try {
+    const userRepo = await getUserRepository();
     // Check if user exists
-    const user = await userRepository.findOne({
+    const user = await userRepo.findOne({
       where: { id },
     });
 
@@ -119,7 +120,7 @@ export async function deleteUser(id: string) {
     }
 
     // Delete user
-    await userRepository.remove(user);
+    await userRepo.remove(user);
 
     return { success: true };
   } catch (error) {

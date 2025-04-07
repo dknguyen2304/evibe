@@ -14,6 +14,7 @@ import {
   PaginationPrevious,
 } from '@/shared/ui/pagination';
 import { useAuth } from '@/shared/hooks/use-auth';
+import { useAuthStore } from '@/features/auth/stores/authStore';
 
 interface User {
   id: string;
@@ -64,7 +65,7 @@ export default function AdminUsers() {
 
       const response = await fetch(`/api/users?${queryParams}`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${useAuthStore.getState().token}`,
         },
       });
 
@@ -107,7 +108,7 @@ export default function AdminUsers() {
       const response = await fetch(`/api/users/${id}`, {
         method: 'DELETE',
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${useAuthStore.getState().token}`,
         },
       });
 

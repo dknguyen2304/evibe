@@ -15,6 +15,7 @@ import {
   PaginationPrevious,
 } from '@/shared/ui/pagination';
 import { useAuth } from '@/shared/hooks/use-auth';
+import { useAuthStore } from '@/features/auth/stores/authStore';
 
 interface Movie {
   id: string;
@@ -67,7 +68,7 @@ export default function AdminMovies() {
 
       const response = await fetch(`/api/movies?${queryParams}`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${useAuthStore.getState().token}`,
         },
       });
 
@@ -104,7 +105,7 @@ export default function AdminMovies() {
       const response = await fetch(`/api/movies/${id}`, {
         method: 'DELETE',
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${useAuthStore.getState().token}`,
         },
       });
 

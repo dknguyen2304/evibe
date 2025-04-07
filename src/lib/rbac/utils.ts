@@ -1,8 +1,8 @@
 import { JWTUserWithRoles } from './types';
 import { verify, sign } from 'jsonwebtoken';
-import { GetDataSource } from '../db';
 import { User } from '../db/entities/User';
 import { Permission } from '../db/entities/Permission';
+import { getUserRepository } from '../db';
 
 // JWT Secret (move to env variable in production)
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key';
@@ -13,8 +13,7 @@ const JWT_EXPIRES_IN = '7d';
  */
 export async function createTokenWithRolesAndPermissions(user: User): Promise<string> {
   try {
-    const dataSource = await GetDataSource();
-    const userRepository = dataSource.getRepository(User);
+    const userRepository = await getUserRepository();
 
     // Get user with roles and permissions
     const userWithRoles = await userRepository.findOne({

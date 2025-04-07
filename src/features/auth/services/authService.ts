@@ -1,9 +1,9 @@
 import { compare, hash } from 'bcryptjs';
 import { sign, verify } from 'jsonwebtoken';
-import { GetDataSource } from '@/lib/db';
 import { User } from '@/lib/db/entities/User';
 import { LoginCredentials, UserCreate } from '@/features/users/schemas/userSchema';
 import { createTokenWithRolesAndPermissions } from '@/lib/rbac/utils';
+import { getDbConnection, getUserRepository } from '@/lib/db';
 
 // JWT configuration
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key';
@@ -17,14 +17,6 @@ const ERROR_MESSAGES = {
   INVALID_TOKEN: 'Invalid authentication token',
   SERVER_ERROR: 'Authentication error occurred',
 };
-
-/**
- * Get user repository
- */
-async function getUserRepository() {
-  const connection = await GetDataSource();
-  return connection.getRepository(User);
-}
 
 /**
  * Login a user with email and password
@@ -157,8 +149,8 @@ export async function getUserById(id: string) {
  */
 export async function assignRoleToUser(userId: string, roleId: string) {
   try {
-    const dataSource = await GetDataSource();
-    await dataSource.query(`INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2)`, [
+    const connection = await getDbConnection();
+    await connection.query(`INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2)`, [
       userId,
       roleId,
     ]);
@@ -175,8 +167,8 @@ export async function assignRoleToUser(userId: string, roleId: string) {
  */
 export async function removeRoleFromUser(userId: string, roleId: string) {
   try {
-    const dataSource = await GetDataSource();
-    await dataSource.query(`DELETE FROM user_roles WHERE user_id = $1 AND role_id = $2`, [
+    const connection = await getDbConnection();
+    await connection.query(`DELETE FROM user_roles WHERE user_id = $1 AND role_id = $2`, [
       userId,
       roleId,
     ]);

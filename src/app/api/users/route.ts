@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
 
     const skip = (page - 1) * limit;
 
-    const userRepo = getUserRepository();
+    const userRepo = await getUserRepository();
     let query = userRepo.createQueryBuilder('user').leftJoinAndSelect('user.roles', 'roles');
 
     // Apply search filter

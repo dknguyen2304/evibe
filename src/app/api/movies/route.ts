@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
 
     const skip = (page - 1) * limit;
 
-    const movieRepo = getMovieRepository();
+    const movieRepo = await getMovieRepository();
     let query = movieRepo
       .createQueryBuilder('movie')
       .leftJoinAndSelect('movie.categories', 'category')
@@ -78,10 +78,10 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    const movieRepo = getMovieRepository();
-    const categoryRepo = getCategoryRepository();
-    const countryRepo = getCountryRepository();
-    const themeRepo = getThemeRepository();
+    const movieRepo = await getMovieRepository();
+    const categoryRepo = await getCategoryRepository();
+    const countryRepo = await getCountryRepository();
+    const themeRepo = await getThemeRepository();
 
     const movie = new Movie();
     movie.title = body.title;

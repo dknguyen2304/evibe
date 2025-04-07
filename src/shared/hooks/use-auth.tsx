@@ -1,5 +1,6 @@
 'use client';
 
+import { useAuthStore } from '@/features/auth/stores/authStore';
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 // Define user type
@@ -48,9 +49,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     const loadUser = async () => {
       try {
-        debugger;
         // Check if we have a token
-        const token = localStorage.getItem('token');
+        const token = useAuthStore.getState().token;
         if (!token) {
           setIsLoading(false);
           return;
@@ -144,7 +144,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Logout function
   const logout = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = useAuthStore.getState().token;
 
       if (token) {
         // Call logout API
@@ -169,7 +169,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Refresh user data
   const refreshUser = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = useAuthStore.getState().token;
 
       if (!token) {
         setUser(null);

@@ -6,7 +6,15 @@ import {
   IconPackages,
   IconServerCog,
 } from '@tabler/icons-react';
-import { ServerCogIcon, UsersIcon } from 'lucide-react';
+import {
+  FilmIcon,
+  ListVideoIcon,
+  PersonStandingIcon,
+  ServerCogIcon,
+  UserCog2Icon,
+  UsersIcon,
+  VenetianMaskIcon,
+} from 'lucide-react';
 import { LinkProps } from 'next/link';
 
 interface User {
@@ -57,7 +65,7 @@ export const sidebarData: SidebarData = {
       items: [
         {
           title: 'Dashboard',
-          url: '/',
+          url: '/dashboard',
           icon: IconLayoutDashboard,
         },
         {
@@ -67,28 +75,28 @@ export const sidebarData: SidebarData = {
             {
               title: 'Movies',
               url: '/movies',
-              icon: IconPackages,
+              icon: FilmIcon,
             },
             {
               title: 'Actors',
               url: '/actors',
-              icon: IconPackages,
+              icon: VenetianMaskIcon,
             },
             {
               title: 'Directors',
               url: '/directors',
-              icon: IconPackages,
+              icon: PersonStandingIcon,
             },
             {
               title: 'Genres',
               url: '/genres',
-              icon: IconPackages,
+              icon: ListVideoIcon,
             },
           ],
         },
         {
           title: 'User Management',
-          icon: IconPackages,
+          icon: UserCog2Icon,
           items: [
             {
               title: 'Users',

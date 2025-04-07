@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs';
 import { useAuth } from '@/shared/hooks/use-auth';
+import { useAuthStore } from '@/features/auth/stores/authStore';
 
 interface DashboardStats {
   totalMovies: number;
@@ -22,7 +23,6 @@ export default function AdminDashboard() {
   const [isLoadingStats, setIsLoadingStats] = useState(true);
 
   useEffect(() => {
-    debugger;
     // Check if user is admin
     if (!isLoading && (!user || !user.roles.includes('admin'))) {
       router.push('/');
@@ -32,9 +32,10 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
+        const token = useAuthStore.getState().token;
         const response = await fetch('/api/admin/stats', {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            Authorization: `Bearer ${token}`,
           },
         });
 

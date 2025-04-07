@@ -21,9 +21,9 @@ export async function GET(req: NextRequest) {
   return cacheApiResponse(
     req,
     async () => {
-      const movieRepo = getMovieRepository();
-      const userRepo = getUserRepository();
-      const viewRepo = getViewRepository();
+      const movieRepo = await getMovieRepository();
+      const userRepo = await getUserRepository();
+      const viewRepo = await getViewRepository();
 
       // Get total counts
       const totalMovies = await movieRepo.count();

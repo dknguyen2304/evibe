@@ -16,7 +16,6 @@ export async function POST(request: NextRequest, { params }: { params: { action:
         return NextResponse.json({ error: 'Invalid credentials format' }, { status: 400 });
       }
 
-      debugger;
       const credentials = result.data;
 
       // Use login service

@@ -1,8 +1,8 @@
-// /src/features/auth/stores/authStore.ts
-import { apiClient, clearAuthToken } from '@/lib/api/client';
+import { apiClient, clearAuthToken, setAuthToken } from '@/lib/api/client';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { User } from '@/features/users/schemas/userSchema';
+import { jwtDecode } from 'jwt-decode';
 
 // Define the credentials type
 interface Credentials {
@@ -14,6 +14,7 @@ interface AuthState {
   user: Omit<User, 'password'> | null;
   token: string | null;
   isAuthenticated: boolean;
+  isLoading: boolean;
   login: (credentials: Credentials) => Promise<void>;
   logout: () => void;
   register: (userData: { name: string; email: string; password: string }) => Promise<void>;
@@ -26,8 +27,10 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       token: null,
       isAuthenticated: false,
+      isLoading: false,
 
       login: async (credentials) => {
+        set({ isLoading: true });
         try {
           const response = await apiClient.auth.login(credentials);
 
@@ -39,6 +42,9 @@ export const useAuthStore = create<AuthState>()(
             throw new Error('Login failed: No data received');
           }
 
+          // Gán token vào header
+          setAuthToken(response.data.token);
+
           set({
             user: response.data.user,
             token: response.data.token,
@@ -47,10 +53,13 @@ export const useAuthStore = create<AuthState>()(
         } catch (error) {
           console.error('Login error:', error);
           throw error;
+        } finally {
+          set({ isLoading: false });
         }
       },
 
       register: async (userData) => {
+        set({ isLoading: true });
         try {
           const response = await apiClient.auth.register(userData);
 
@@ -62,19 +71,19 @@ export const useAuthStore = create<AuthState>()(
             throw new Error('Registration failed: No data received');
           }
 
-          // Registration successful, but user still needs to login
+          // Đăng ký thành công, chờ đăng nhập
           return;
         } catch (error) {
           console.error('Registration error:', error);
           throw error;
+        } finally {
+          set({ isLoading: false });
         }
       },
 
       logout: () => {
-        // Clear token from client
         clearAuthToken();
 
-        // Reset auth state
         set({
           user: null,
           token: null,
@@ -85,28 +94,35 @@ export const useAuthStore = create<AuthState>()(
       checkAuth: () => {
         const { token, isAuthenticated } = get();
 
-        // If we have a token and are marked as authenticated
-        if (token && isAuthenticated) {
-          // We could add JWT expiration validation here
-          // For now, we just check if we have the token
-          return true;
-        }
+        if (!token || !isAuthenticated) return false;
 
-        return false;
+        try {
+          const decoded: any = jwtDecode(token);
+          const exp = decoded.exp * 1000;
+          return Date.now() < exp;
+        } catch {
+          return false;
+        }
       },
     }),
     {
       name: 'auth-storage',
-      // Only persist these fields
       partialize: (state) => ({
         user: state.user,
         token: state.token,
         isAuthenticated: state.isAuthenticated,
       }),
+      onRehydrateStorage: () => (state) => {
+        // Khi store được khôi phục, tự động set lại token vào header
+        if (state?.token) {
+          setAuthToken(state.token);
+        }
+      },
     },
   ),
 );
 
-// Helper hooks for common auth operations
+// Helper hooks
 export const useUser = () => useAuthStore((state) => state.user);
 export const useIsAuthenticated = () => useAuthStore((state) => state.isAuthenticated);
+export const useIsLoading = () => useAuthStore((state) => state.isLoading);

@@ -4,7 +4,6 @@ import { ZodSchema } from 'zod';
 import { loginSchema, userCreateSchema } from '@/features/users/schemas/userSchema';
 import { loginUser, registerUser, verifyToken } from '@/features/auth/services/authService';
 import { getAllUsers, createUser } from '@/features/users/services/userService';
-import { GetDataSource } from '@/lib/db';
 
 export const runtime = 'edge';
 
@@ -39,8 +38,6 @@ async function validateRequest(request: NextRequest, schema: ZodSchema) {
 // Hello endpoint
 export async function GET(request: NextRequest) {
   try {
-    const connection = await GetDataSource();
-
     const url = new URL(request.url);
     const path = url.pathname.replace('/api', '');
 
@@ -100,8 +97,6 @@ export async function GET(request: NextRequest) {
 // Handle POST requests
 export async function POST(request: NextRequest) {
   try {
-    const connection = await GetDataSource();
-
     const url = new URL(request.url);
     const path = url.pathname.replace('/api', '');
 

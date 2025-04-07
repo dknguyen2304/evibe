@@ -174,7 +174,6 @@ export async function loginUser(
   email: string,
   password: string,
 ): Promise<{ user: User; token: string }> {
-  debugger;
   const userRepo = await getUserRepository();
 
   // Find user with password (need to explicitly select password)

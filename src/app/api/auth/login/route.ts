@@ -11,7 +11,6 @@ const loginSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    debugger;
     const body = await req.json();
 
     // Validate input

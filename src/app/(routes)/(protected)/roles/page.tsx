@@ -32,7 +32,7 @@ export default function AdminRoles() {
 
       const response = await fetch('/api/roles', {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${useAuthStore.getState().token}`,
         },
       });
 
@@ -70,7 +70,7 @@ export default function AdminRoles() {
       const response = await fetch(`/api/roles/${id}`, {
         method: 'DELETE',
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${useAuthStore.getState().token}`,
         },
       });
 
