@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { loginSchema, userCreateSchema } from '@/features/users/schemas/userSchema';
 import { loginUser, registerUser } from '@/features/auth/services/authService';
-import { GetDataSource } from '@/lib/db';
 
 export async function POST(request: NextRequest, { params }: { params: { action: string[] } }) {
   try {
-    const connection = await GetDataSource();
-
     const action = params.action[0];
 
     // Handle login
